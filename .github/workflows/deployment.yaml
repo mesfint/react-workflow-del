@@ -1,0 +1,40 @@
+  name: workflow-demo
+  on:
+    pull_request:
+      branches: [develop]
+  jobs:
+    deploy:
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout our code
+          uses: actions/checkout@v2
+        - name: setup node
+          uses: actions/setup-node@v1
+          with:
+            node-version: 16.x
+        - name: Get Yarn cache dir
+          id: yarn-cache-dir
+          run: echo " ::set-output name=dir::$(yarn cache dir)"
+        - name: Setup cache
+          uses: actions/cache@v1
+          with:
+            path: ${{ steps.yarn-cache-dir.outputs.dir }}
+            keys:  ${{ runner.os}}-modules-${{ hashFiles('**/yarn-lock')}}
+        - name: install dependecies
+          run: yarn install --frozen-lockfile
+        - name: run test
+          run: yarn test
+        - name: Build project
+          run: yarn build
+        - name: Lets deploy install
+          uses: netlify/actions/cli@master
+          env:
+            NETLOFY_AUTH_TOKEN: ${{ secrets.NETLOFY_AUTH_TOKEN}}
+            NETLOFY_SITE_ID: ${{ secrets.NETLOFY_SITE_ID}}
+          with:
+            args: deploy --dir=build --prod
+
+          
+
+
